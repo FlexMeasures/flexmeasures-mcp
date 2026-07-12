@@ -6,13 +6,18 @@ Requires a live FlexMeasures stack with workers (see conftest.py).
 from __future__ import annotations
 
 import asyncio
+import os
 import uuid
 
 import pytest
 
-from .conftest import requires_live_server
-
-pytestmark = [pytest.mark.e2e, requires_live_server]
+pytestmark = [
+    pytest.mark.e2e,
+    pytest.mark.skipif(
+        os.environ.get("FLEXMEASURES_E2E_HOST") is None,
+        reason="set FLEXMEASURES_E2E_HOST (+_EMAIL/_PASSWORD) to run e2e tests",
+    ),
+]
 
 POLL_SECONDS = 2
 POLL_ATTEMPTS = 60

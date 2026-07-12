@@ -24,11 +24,6 @@ from flexmeasures_mcp.server import create_server
 
 E2E_HOST = os.environ.get("FLEXMEASURES_E2E_HOST")
 
-requires_live_server = pytest.mark.skipif(
-    E2E_HOST is None,
-    reason="set FLEXMEASURES_E2E_HOST (+_EMAIL/_PASSWORD) to run e2e tests",
-)
-
 
 @pytest.fixture
 def live_session():
