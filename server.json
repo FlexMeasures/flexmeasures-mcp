@@ -1,0 +1,49 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.flexmeasures/flexmeasures",
+  "title": "FlexMeasures",
+  "description": "Build and operate FlexMeasures energy-flexibility sites: assets, sensors, data, forecasts, schedules and report automations.",
+  "repository": {
+    "url": "https://github.com/FlexMeasures/flexmeasures-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "flexmeasures-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "FLEXMEASURES_HOST",
+          "description": "FlexMeasures host without scheme, e.g. company.flexmeasures.io",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "FLEXMEASURES_EMAIL",
+          "description": "User email to authenticate with",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "FLEXMEASURES_PASSWORD",
+          "description": "User password",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "FLEXMEASURES_SSL",
+          "description": "Set to false for plain-http instances (default: true unless host is localhost)",
+          "isRequired": false,
+          "format": "boolean"
+        }
+      ]
+    }
+  ]
+}
