@@ -13,6 +13,7 @@ Run with: pytest -m e2e
 
 from __future__ import annotations
 
+import asyncio
 import os
 from contextlib import asynccontextmanager
 
@@ -23,6 +24,23 @@ from flexmeasures_mcp.config import Settings
 from flexmeasures_mcp.server import create_server
 
 E2E_HOST = os.environ.get("FLEXMEASURES_E2E_HOST")
+HEALTH_ATTEMPTS = int(os.environ.get("FLEXMEASURES_E2E_HEALTH_ATTEMPTS", "30"))
+HEALTH_SECONDS = float(os.environ.get("FLEXMEASURES_E2E_HEALTH_SECONDS", "2"))
+
+
+async def _wait_for_health(session):
+    last_error = None
+    for _ in range(HEALTH_ATTEMPTS):
+        try:
+            result = await session.call_tool("health_check", {})
+        except Exception as exc:  # noqa: BLE001 - startup can fail in several layers
+            last_error = exc
+        else:
+            if not result.isError:
+                return
+            last_error = result.content
+        await asyncio.sleep(HEALTH_SECONDS)
+    pytest.fail(f"FlexMeasures e2e server did not become healthy: {last_error}")
 
 
 @pytest.fixture
@@ -40,6 +58,7 @@ def live_session():
         async with create_connected_server_and_client_session(
             server._mcp_server
         ) as session:
+            await _wait_for_health(session)
             yield session
 
     return _make
