@@ -19,8 +19,9 @@ pytestmark = [
     ),
 ]
 
-POLL_SECONDS = 2
-POLL_ATTEMPTS = 60
+POLL_SECONDS = float(os.environ.get("FLEXMEASURES_E2E_POLL_SECONDS", "2"))
+POLL_ATTEMPTS = int(os.environ.get("FLEXMEASURES_E2E_POLL_ATTEMPTS", "120"))
+SCHEDULE_HOURS = int(os.environ.get("FLEXMEASURES_E2E_SCHEDULE_HOURS", "6"))
 
 
 async def _poll_job(session, job_id: str) -> dict:
@@ -95,15 +96,21 @@ async def test_build_site_and_run_schedule(live_session):
         # price data for tomorrow
         import pandas as pd
 
-        start = (pd.Timestamp.utcnow().floor("D") + pd.Timedelta(days=1)).isoformat()
-        prices = [50 + 30 * ((h % 24) in (8, 9, 18, 19)) for h in range(24)]
+        start = (
+            pd.Timestamp.now(tz="UTC").floor("D") + pd.Timedelta(days=1)
+        ).isoformat()
+        duration = f"PT{SCHEDULE_HOURS}H"
+        prices = [
+            50 + 30 * (h in (1, SCHEDULE_HOURS - 2))
+            for h in range(SCHEDULE_HOURS)
+        ]
         posted = await session.call_tool(
             "post_sensor_data",
             {
                 "sensor_id": price["id"],
                 "values": prices,
                 "start": start,
-                "duration": "PT24H",
+                "duration": duration,
                 "unit": "EUR/MWh",
             },
         )
@@ -115,7 +122,7 @@ async def test_build_site_and_run_schedule(live_session):
             {
                 "sensor_id": power["id"],
                 "start": start,
-                "duration": "PT24H",
+                "duration": duration,
                 "flex_model": {
                     "soc-at-start": "0 kWh",
                     "soc-min": "0 kWh",
