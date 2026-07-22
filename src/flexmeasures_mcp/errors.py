@@ -42,16 +42,16 @@ def map_fm_errors(
             return await func(*args, **kwargs)
         except JobPending as e:
             return _pending_result(str(e), status=e.status)
+        except aiohttp.ContentTypeError as e:
+            raise ToolError(
+                f"Unexpected (non-JSON) response from the FlexMeasures server: {e}"
+            ) from e
         except aiohttp.ClientResponseError as e:
             raise ToolError(_describe_http_error(e.status, e.message)) from e
         except (aiohttp.ClientConnectorError, ConnectionError) as e:
             raise ToolError(
                 f"Cannot reach the FlexMeasures server: {e}. "
                 "Check FLEXMEASURES_HOST and FLEXMEASURES_SSL."
-            ) from e
-        except aiohttp.ContentTypeError as e:
-            raise ToolError(
-                f"Unexpected (non-JSON) response from the FlexMeasures server: {e}"
             ) from e
         except ValueError as e:
             message = str(e)
