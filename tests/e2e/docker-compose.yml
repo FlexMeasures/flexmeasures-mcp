@@ -50,4 +50,11 @@ services:
       FLEXMEASURES_REDIS_URL: queue-db
       FLEXMEASURES_REDIS_PASSWORD: fm-redis-pass
       FLEXMEASURES_ENV: development
-    command: flexmeasures jobs run-worker --queue forecasting,scheduling,reporting
+    command:
+      [
+        "flexmeasures",
+        "jobs",
+        "run-worker",
+        "--queue",
+        "forecasting|scheduling|ingestion",
+      ]
