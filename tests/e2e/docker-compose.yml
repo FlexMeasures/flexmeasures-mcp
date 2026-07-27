@@ -1,0 +1,60 @@
+# Self-contained FlexMeasures stack for e2e tests.
+# Uses its own Postgres and Redis - do NOT point the tests at a shared instance.
+#
+#   docker compose -f tests/e2e/docker-compose.yml up -d
+#   docker compose -f tests/e2e/docker-compose.yml exec server \
+#     flexmeasures add toy-account --kind battery
+#   FLEXMEASURES_E2E_HOST=localhost:5001 \
+#   FLEXMEASURES_E2E_EMAIL=toy-user@flexmeasures.io \
+#   FLEXMEASURES_E2E_PASSWORD=toy-password pytest -m e2e
+
+services:
+  dev-db:
+    image: postgres
+    environment:
+      POSTGRES_DB: fm-db
+      POSTGRES_USER: fm-db-user
+      POSTGRES_PASSWORD: fm-db-pass
+
+  queue-db:
+    image: redis
+    command: redis-server --requirepass fm-redis-pass
+
+  server:
+    image: lfenergy/flexmeasures
+    ports:
+      - "5001:5000"
+    depends_on:
+      - dev-db
+      - queue-db
+    environment:
+      SQLALCHEMY_DATABASE_URI: "postgresql://fm-db-user:fm-db-pass@dev-db:5432/fm-db"
+      SECRET_KEY: notsecret
+      SECURITY_TOTP_SECRETS: '{"1": "notsecret"}'
+      FLEXMEASURES_REDIS_URL: queue-db
+      FLEXMEASURES_REDIS_PASSWORD: fm-redis-pass
+      FLEXMEASURES_ENV: development
+      LOGGING_LEVEL: INFO
+    command: >
+      bash -c "flexmeasures db upgrade && flexmeasures run --host 0.0.0.0"
+
+  worker:
+    image: lfenergy/flexmeasures
+    depends_on:
+      - dev-db
+      - queue-db
+    environment:
+      SQLALCHEMY_DATABASE_URI: "postgresql://fm-db-user:fm-db-pass@dev-db:5432/fm-db"
+      SECRET_KEY: notsecret
+      SECURITY_TOTP_SECRETS: '{"1": "notsecret"}'
+      FLEXMEASURES_REDIS_URL: queue-db
+      FLEXMEASURES_REDIS_PASSWORD: fm-redis-pass
+      FLEXMEASURES_ENV: development
+    command:
+      [
+        "flexmeasures",
+        "jobs",
+        "run-worker",
+        "--queue",
+        "forecasting|scheduling|ingestion",
+      ]

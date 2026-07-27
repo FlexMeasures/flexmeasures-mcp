@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flexmeasures-mcp"
+version = "0.1.0"
+description = "MCP server for FlexMeasures: let agents build and operate energy-flexibility sites over the FlexMeasures API"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "Seita B.V.", email = "felix@seita.nl" }]
+keywords = ["mcp", "flexmeasures", "energy", "scheduling", "forecasting"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "mcp>=1.10",
+    "flexmeasures-client>=0.9",
+    "pydantic>=2",
+    "pydantic-settings>=2",
+    "aiohttp>=3.9",
+    "pandas",
+]
+
+[project.urls]
+Homepage = "https://github.com/FlexMeasures/flexmeasures-mcp"
+Documentation = "https://flexmeasures.readthedocs.io"
+
+[project.scripts]
+flexmeasures-mcp = "flexmeasures_mcp.cli:main"
+
+# Extension point: plugins can register extra MCP tools by pointing an entry
+# point at a callable `register(mcp: FastMCP, get_app_context) -> None`.
+[project.entry-points."flexmeasures_mcp.tools"]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flexmeasures_mcp"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "e2e: end-to-end tests against a live FlexMeasures stack (opt in with -m e2e)",
+]
+addopts = "-m 'not e2e'"
