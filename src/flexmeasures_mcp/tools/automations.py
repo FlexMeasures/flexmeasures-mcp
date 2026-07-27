@@ -14,10 +14,11 @@ from mcp.server.fastmcp import Context, FastMCP
 from flexmeasures_mcp.config import Settings
 from flexmeasures_mcp.deps import client
 from flexmeasures_mcp.errors import map_fm_errors
+from flexmeasures_mcp.tools import write_tool
 
 
 def register(mcp: FastMCP, settings: Settings) -> None:
-    @mcp.tool()
+    @write_tool(mcp, settings)
     @map_fm_errors
     async def create_automation(
         asset_id: int,
@@ -51,7 +52,7 @@ def register(mcp: FastMCP, settings: Settings) -> None:
             payload["config"] = config
         return await client(ctx).add_automation(asset_id=asset_id, automation=payload)
 
-    @mcp.tool()
+    @write_tool(mcp, settings)
     @map_fm_errors
     async def create_report_automation(
         asset_id: int,
@@ -94,7 +95,7 @@ def register(mcp: FastMCP, settings: Settings) -> None:
             asset_id=asset_id, automation_id=automation_id
         )
 
-    @mcp.tool()
+    @write_tool(mcp, settings)
     @map_fm_errors
     async def update_automation(
         asset_id: int,
@@ -118,7 +119,7 @@ def register(mcp: FastMCP, settings: Settings) -> None:
 
     if settings.enable_delete:
 
-        @mcp.tool()
+        @write_tool(mcp, settings)
         @map_fm_errors
         async def delete_automation(
             asset_id: int, automation_id: int, ctx: Context

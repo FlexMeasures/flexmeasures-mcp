@@ -9,6 +9,7 @@ from mcp.server.fastmcp import Context, FastMCP
 from flexmeasures_mcp.config import Settings
 from flexmeasures_mcp.deps import client
 from flexmeasures_mcp.errors import map_fm_errors
+from flexmeasures_mcp.tools import write_tool
 
 NEXT_STEPS = (
     "Poll get_job_status(job_id=<schedule_id>) until status is FINISHED "
@@ -18,7 +19,7 @@ NEXT_STEPS = (
 
 
 def register(mcp: FastMCP, settings: Settings) -> None:
-    @mcp.tool()
+    @write_tool(mcp, settings)
     @map_fm_errors
     async def trigger_schedule(
         start: str,

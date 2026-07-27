@@ -38,6 +38,12 @@ def create_server(
     settings = settings or Settings()
     client_factory = client_factory or default_client_factory
 
+    if settings.read_only and (settings.enable_delete or settings.enable_auth_tool):
+        logger.warning(
+            "Read-only mode wins over FLEXMEASURES_MCP_ENABLE_DELETE / "
+            "FLEXMEASURES_MCP_ENABLE_AUTH_TOOL: no mutating tools are exposed."
+        )
+
     @asynccontextmanager
     async def lifespan(_server: FastMCP) -> AsyncIterator[AppContext]:
         client = client_factory(settings)
@@ -46,16 +52,28 @@ def create_server(
         finally:
             await client.close()
 
-    mcp = FastMCP(
-        "FlexMeasures",
-        instructions=(
+    if settings.read_only:
+        instructions = (
+            "Inspect FlexMeasures energy-flexibility sites: browse assets and "
+            "sensors, read time-series data, retrieve forecasts and schedules, "
+            "check job status, and review automations. This server runs in "
+            "read-only mode: no tools that create, change or trigger anything "
+            "are available - recommend such actions to the user instead of "
+            "attempting them."
+        )
+    else:
+        instructions = (
             "Build and operate FlexMeasures energy-flexibility sites: create "
             "assets and sensors, post time-series data, trigger forecasting "
             "and scheduling jobs, poll job status, retrieve results, and "
             "manage report/forecast/schedule automations. Jobs run "
             "asynchronously on workers: trigger tools return a job UUID; poll "
             "get_job_status until FINISHED, then fetch results."
-        ),
+        )
+
+    mcp = FastMCP(
+        "FlexMeasures",
+        instructions=instructions,
         lifespan=lifespan,
     )
 

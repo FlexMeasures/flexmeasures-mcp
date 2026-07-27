@@ -9,6 +9,7 @@ from mcp.server.fastmcp import Context, FastMCP
 from flexmeasures_mcp.config import Settings
 from flexmeasures_mcp.deps import app_ctx, client
 from flexmeasures_mcp.errors import map_fm_errors
+from flexmeasures_mcp.tools import write_tool
 
 
 def register(mcp: FastMCP, settings: Settings) -> None:
@@ -44,7 +45,7 @@ def register(mcp: FastMCP, settings: Settings) -> None:
 
     if settings.enable_auth_tool:
 
-        @mcp.tool()
+        @write_tool(mcp, settings)
         @map_fm_errors
         async def authenticate(email: str, password: str, ctx: Context) -> dict[str, Any]:
             """Swap the credentials this server uses for the FlexMeasures API

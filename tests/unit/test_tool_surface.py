@@ -34,6 +34,18 @@ EXPECTED_TOOLS = {
 
 GATED_TOOLS = {"delete_asset", "delete_automation", "authenticate"}
 
+WRITE_TOOLS = {
+    "create_asset",
+    "update_asset",
+    "create_sensor",
+    "post_sensor_data",
+    "trigger_forecast",
+    "trigger_schedule",
+    "create_automation",
+    "create_report_automation",
+    "update_automation",
+}
+
 
 async def test_default_tool_surface(make_session):
     async with make_session() as session:
@@ -45,6 +57,33 @@ async def test_gated_tools_appear_when_enabled(make_session):
     async with make_session(enable_delete=True, enable_auth_tool=True) as session:
         tools = {t.name for t in (await session.list_tools()).tools}
     assert tools == EXPECTED_TOOLS | GATED_TOOLS
+
+
+async def test_read_only_tool_surface(make_session):
+    async with make_session(read_only=True) as session:
+        tools = {t.name for t in (await session.list_tools()).tools}
+    assert tools == EXPECTED_TOOLS - WRITE_TOOLS
+
+
+async def test_read_only_wins_over_gated_tools(make_session, caplog):
+    async with make_session(
+        read_only=True, enable_delete=True, enable_auth_tool=True
+    ) as session:
+        tools = {t.name for t in (await session.list_tools()).tools}
+    assert tools == EXPECTED_TOOLS - WRITE_TOOLS
+    assert "Read-only mode wins" in caplog.text
+
+
+async def test_read_only_prompt_surface(make_session):
+    """Write-workflow prompts are hidden; diagnosis stays, resources stay."""
+    async with make_session(read_only=True) as session:
+        prompts = {p.name for p in (await session.list_prompts()).prompts}
+        resources = {str(r.uri) for r in (await session.list_resources()).resources}
+        prompt = await session.get_prompt("diagnose_failed_job", {"job_id": "job-123"})
+    assert prompts == {"diagnose_failed_job"}
+    assert "flexmeasures://docs/flex-model" in resources
+    assert "flexmeasures://docs/flex-context" in resources
+    assert "read-only" in prompt.messages[0].content.text
 
 
 async def test_prompts_and_resources(make_session):

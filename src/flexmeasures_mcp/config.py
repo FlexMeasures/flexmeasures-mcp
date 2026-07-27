@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     password: str | None = None
     access_token: str | None = None
 
+    read_only: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("FLEXMEASURES_MCP_READ_ONLY"),
+    )
     enable_delete: bool = Field(
         default=False,
         validation_alias=AliasChoices("FLEXMEASURES_MCP_ENABLE_DELETE"),
