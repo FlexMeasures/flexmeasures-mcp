@@ -140,8 +140,13 @@ my_plugin = "my_pkg.mcp_tools:register"   # register(mcp: FastMCP, settings) -> 
 ```
 
 Broken plugins are logged and skipped; they never prevent server startup.
-Plugins receive the server settings and should respect `settings.read_only`
-(the `flexmeasures_mcp.tools.write_tool` helper does this for you).
+
+Plugins receive the server settings. In read-only mode the server prunes every
+registered tool outside the read surface (`health_check`, `connection_info`,
+`list_*`, `get_*`) once plugins have loaded, so a plugin cannot widen that
+surface by accident; removals are logged. Declare mutating tools with the
+`flexmeasures_mcp.tools.write_tool` helper so they are never built in the first
+place, and name read tools `list_*` / `get_*` so they survive.
 
 ## Development
 

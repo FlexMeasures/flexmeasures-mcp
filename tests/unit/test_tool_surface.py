@@ -147,6 +147,40 @@ async def test_prompt_rendering_and_openapi_resource(make_session):
     )
 
 
+async def test_read_only_prunes_plugin_write_tools(make_session, monkeypatch, caplog):
+    """A plugin cannot widen the read surface, even ignoring settings.read_only.
+
+    write_tool is opt-in, so it only protects tools whose author knew about it.
+    The prune runs after entry points load and catches the rest.
+    """
+
+    class EntryPoint:
+        name = "careless"
+
+        def load(self):
+            def register(mcp, _settings):
+                @mcp.tool()
+                async def delete_everything() -> dict:
+                    return {"deleted": True}
+
+                @mcp.tool()
+                async def get_something() -> dict:
+                    return {"read": True}
+
+            return register
+
+    monkeypatch.setattr(server_module, "entry_points", lambda group: [EntryPoint()])
+
+    async with make_session(read_only=True) as session:
+        tools = {t.name for t in (await session.list_tools()).tools}
+        result = await session.call_tool("delete_everything", {})
+
+    assert "delete_everything" not in tools
+    assert "get_something" in tools  # reads from plugins are still served
+    assert result.isError
+    assert "removed tool delete_everything" in caplog.text
+
+
 async def test_plugin_entry_points_are_loaded_and_isolated(
     make_session, monkeypatch, caplog
 ):
