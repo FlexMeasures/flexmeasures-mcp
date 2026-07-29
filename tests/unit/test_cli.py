@@ -26,6 +26,23 @@ def test_cli_defaults_to_stdio(monkeypatch):
     assert fake.runs == [{"transport": "stdio"}]
 
 
+def test_cli_read_only_flag(monkeypatch):
+    fake = FakeServer()
+    captured = {}
+
+    def fake_create_server(settings=None):
+        captured["settings"] = settings
+        return fake
+
+    monkeypatch.setattr(cli, "create_server", fake_create_server)
+    monkeypatch.setattr("sys.argv", ["flexmeasures-mcp", "--read-only"])
+
+    cli.main()
+
+    assert captured["settings"].read_only is True
+    assert fake.runs == [{"transport": "stdio"}]
+
+
 def test_cli_configures_streamable_http(monkeypatch):
     fake = FakeServer()
     monkeypatch.setattr(cli, "create_server", lambda: fake)

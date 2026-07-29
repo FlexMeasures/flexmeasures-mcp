@@ -35,7 +35,9 @@ Documentation = "https://flexmeasures.readthedocs.io"
 flexmeasures-mcp = "flexmeasures_mcp.cli:main"
 
 # Extension point: plugins can register extra MCP tools by pointing an entry
-# point at a callable `register(mcp: FastMCP, get_app_context) -> None`.
+# point at a callable `register(mcp: FastMCP, settings: Settings) -> None`.
+# In read-only mode the server prunes anything outside the read surface after
+# plugins load, so declare mutating tools with flexmeasures_mcp.tools.write_tool.
 [project.entry-points."flexmeasures_mcp.tools"]
 
 [project.optional-dependencies]

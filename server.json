@@ -42,6 +42,12 @@
           "description": "Set to false for plain-http instances (default: true unless host is localhost)",
           "isRequired": false,
           "format": "boolean"
+        },
+        {
+          "name": "FLEXMEASURES_MCP_READ_ONLY",
+          "description": "Serve only inspection tools; hide every tool that creates, changes or triggers anything (default: false)",
+          "isRequired": false,
+          "format": "boolean"
         }
       ]
     }

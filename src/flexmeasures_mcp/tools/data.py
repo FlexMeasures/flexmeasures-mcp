@@ -9,10 +9,11 @@ from mcp.server.fastmcp import Context, FastMCP
 from flexmeasures_mcp.config import Settings
 from flexmeasures_mcp.deps import client
 from flexmeasures_mcp.errors import map_fm_errors
+from flexmeasures_mcp.tools import write_tool
 
 
 def register(mcp: FastMCP, settings: Settings) -> None:
-    @mcp.tool()
+    @write_tool(mcp, settings)
     @map_fm_errors
     async def post_sensor_data(
         sensor_id: int,

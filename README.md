@@ -28,6 +28,7 @@ Requires Python 3.10+ and a FlexMeasures instance (yours, or a hosted one).
 | `FLEXMEASURES_PASSWORD` | yes* | User password (kept out of the agent's context) |
 | `FLEXMEASURES_ACCESS_TOKEN` | no | Alternative to email/password; note tokens expire and cannot auto-refresh |
 | `FLEXMEASURES_SSL` | no | `true`/`false`; default: `true` unless host is localhost |
+| `FLEXMEASURES_MCP_READ_ONLY` | no | Serve only inspection tools — hide every tool that creates, changes or triggers anything (default off); wins over the `ENABLE_*` toggles below |
 | `FLEXMEASURES_MCP_ENABLE_DELETE` | no | Expose `delete_asset` / `delete_automation` tools (default off) |
 | `FLEXMEASURES_MCP_ENABLE_AUTH_TOOL` | no | Expose an `authenticate(email, password)` tool (default off — credentials passed through it end up in the conversation transcript) |
 
@@ -71,6 +72,21 @@ flexmeasures-mcp --transport streamable-http --host 0.0.0.0 --port 8100
 configured FlexMeasures user. Put an authenticating proxy in front before
 exposing it beyond localhost.
 
+### Read-only mode
+
+Set `FLEXMEASURES_MCP_READ_ONLY=true` (or pass `--read-only`) to serve only
+inspection tools: listing and fetching assets, sensors and automations,
+reading time-series data, forecasts and schedules, and checking job status.
+Tools that create, change or trigger anything are not registered at all, and
+read-only wins over `FLEXMEASURES_MCP_ENABLE_DELETE` /
+`FLEXMEASURES_MCP_ENABLE_AUTH_TOOL`.
+
+Use it wherever an agent should explain rather than act — a consumer-facing
+assistant answering "why is my battery charging right now?", or support
+tooling diagnosing an instance. The FlexMeasures permission model remains
+authoritative either way; this is an extra local safety switch that also
+shrinks the tool surface the model has to reason about.
+
 ## Tools
 
 Meta: `health_check`, `connection_info` (+ gated `authenticate`).
@@ -82,6 +98,9 @@ Automations: `create_automation`, `create_report_automation`, `list_automations`
 Tool names match the stable `operationId`s in the FlexMeasures OpenAPI spec
 (served by every instance at `/ui/static/openapi-specs.json`; the curated
 surface is marked with `x-mcp-tool`).
+
+In read-only mode, only the `health_check`, `connection_info`, `list_*` and
+`get_*` tools above are served.
 
 Async semantics: `trigger_*` tools return a job UUID immediately (the API
 responds 202); poll `get_job_status` until `FINISHED`, then fetch results with
@@ -121,6 +140,13 @@ my_plugin = "my_pkg.mcp_tools:register"   # register(mcp: FastMCP, settings) -> 
 ```
 
 Broken plugins are logged and skipped; they never prevent server startup.
+
+Plugins receive the server settings. In read-only mode the server prunes every
+registered tool outside the read surface (`health_check`, `connection_info`,
+`list_*`, `get_*`) once plugins have loaded, so a plugin cannot widen that
+surface by accident; removals are logged. Declare mutating tools with the
+`flexmeasures_mcp.tools.write_tool` helper so they are never built in the first
+place, and name read tools `list_*` / `get_*` so they survive.
 
 ## Development
 
