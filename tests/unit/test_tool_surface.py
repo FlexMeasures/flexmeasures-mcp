@@ -46,6 +46,10 @@ WRITE_TOOLS = {
     "update_automation",
 }
 
+# Read tools are named list_* / get_* after their OpenAPI operationIds; these
+# two are the only reads that are not.
+READ_ONLY_ALLOWED = {"health_check", "connection_info"}
+
 
 async def test_default_tool_surface(make_session):
     async with make_session() as session:
@@ -72,6 +76,25 @@ async def test_read_only_wins_over_gated_tools(make_session, caplog):
         tools = {t.name for t in (await session.list_tools()).tools}
     assert tools == EXPECTED_TOOLS - WRITE_TOOLS
     assert "Read-only mode wins" in caplog.text
+
+
+async def test_read_only_surface_is_only_reads(make_session):
+    """No tool outside the documented read surface survives read-only mode.
+
+    Convention-based on purpose. The WRITE_TOOLS tests above pin the exact
+    surface, but they compare against a set maintained by hand: a new mutating
+    tool that is registered with @mcp.tool() instead of @write_tool lands in
+    EXPECTED_TOOLS and not in WRITE_TOOLS, so it appears on both sides of that
+    comparison and passes. This one fails automatically instead.
+    """
+    async with make_session(read_only=True) as session:
+        tools = {t.name for t in (await session.list_tools()).tools}
+    offenders = sorted(
+        t
+        for t in tools
+        if not (t.startswith(("list_", "get_")) or t in READ_ONLY_ALLOWED)
+    )
+    assert not offenders, f"non-read tools in read-only mode: {offenders}"
 
 
 async def test_read_only_prompt_surface(make_session):
