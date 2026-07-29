@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from flexmeasures_mcp import server as server_module
 
@@ -107,6 +108,15 @@ async def test_read_only_prompt_surface(make_session):
     assert "flexmeasures://docs/flex-model" in resources
     assert "flexmeasures://docs/flex-context" in resources
     assert "read-only" in prompt.messages[0].content.text
+
+
+async def test_read_only_prompt_calls_only_available_tools(make_session):
+    """A prompt must not point the agent at a tool this mode does not serve."""
+    async with make_session(read_only=True) as session:
+        available = {t.name for t in (await session.list_tools()).tools}
+        prompt = await session.get_prompt("diagnose_failed_job", {"job_id": "j"})
+    called = set(re.findall(r"\b([a-z][a-z_]{2,})\(", prompt.messages[0].content.text))
+    assert not called - available, f"unavailable tools: {sorted(called - available)}"
 
 
 async def test_prompts_and_resources(make_session):

@@ -19,20 +19,24 @@ def register(mcp: FastMCP, settings: Settings) -> None:
             if job_id
             else f"the most recent failed job on asset {asset_id}"
         )
+        # Step 3 stays diagnostic (the remedy is a noun phrase, not an
+        # instruction) so that only step 4 tells the agent whether to act.
+        # An imperative there would contradict the read-only variant below,
+        # and point at tools this mode does not serve.
         if settings.read_only:
-            final_step = """4. This server is read-only, so do not attempt fixes yourself: report the root cause and the exact recommended fix (data to post, flex-model change, or operational action) to the user."""
+            final_step = """4. This server is read-only, so do not attempt fixes yourself: report the root cause and the bracketed remedy (data to post, flex-model change, or operational action) to the user."""
         else:
-            final_step = """4. Apply the fix where it is data- or config-related, re-trigger, and confirm the new job finishes. Summarize root cause and what you changed."""
+            final_step = """4. Apply the bracketed remedy where it is data- or config-related, re-trigger, and confirm the new job finishes. Summarize root cause and what you changed."""
         return f"""Diagnose {target} in FlexMeasures:
 
 1. If you only have an asset, call list_asset_jobs({asset_id or '<asset_id>'}) and pick the failed job.
 2. Call get_job_status(job_id=...) and read status, message and exc_info.
-3. Map the failure to a cause and fix:
-   - infeasible flex-model (SoC targets unreachable, capacities too tight) -> relax constraints and re-trigger
-   - missing price/forecast data in the planning window -> post or forecast the missing series first
-   - unknown/inaccessible sensor in flex-context -> check IDs and account access with get_sensor
-   - too little training data (forecasting) -> post more history
-   - Redis/worker unavailable (503) -> the instance needs its workers running
+3. Map the failure to a cause; the matching remedy is in brackets:
+   - infeasible flex-model (SoC targets unreachable, capacities too tight) [looser constraints, then a re-trigger]
+   - missing price/forecast data in the planning window [the missing series has to be posted or forecast first]
+   - unknown/inaccessible sensor in flex-context [wrong IDs or account access - confirm with get_sensor]
+   - too little training data (forecasting) [more history on the sensor]
+   - Redis/worker unavailable (503) [the instance needs its workers running]
 {final_step}"""
 
 
